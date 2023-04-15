@@ -1,0 +1,59 @@
+User part
+
+authentication
+    get user --
+    register  -- 
+    login --
+    update profile --
+    update profile photo --
+    reset password  --
+    update password  --
+
+post
+    see all posts
+    search posts
+    create post
+    delete post
+    save post
+    like - unlike
+
+comment 
+    all comments
+    create comment
+    delete comment
+
+reply 
+    create reply
+    all replies of a comment
+    delete reply
+
+author
+    see author details
+    see authors posts
+
+
+
+
+------------------------------------------
+Admin part
+
+authentication
+    admin --
+    login --
+    update password --
+    update profile --
+    update profile photo
+
+manage users   
+    see all users  
+    edit block unblock users.
+    see all posts by user,
+    see all comments by user
+
+manage posts
+    create post
+    delete post
+    delete users post
+    see all posts
+    delete any comment or reply
+
