@@ -23,15 +23,55 @@ const userSchema = mongoose.Schema({
     avatar: {
         type: String, 
     },
+    shortBio: {
+        type: String,
+    },
     role: {
         type: String, 
         enum: ['admin', 'user'],
         default: 'user',
     },
-    isDeleted:{
+    
+    isBlocked:{
         type: Boolean,
         default: false,
-    }
+    },
+
+    blockedReason:{
+        type: String, 
+    },
+
+    blockedAt: {
+        type : Date,
+    },
+
+    posts: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "Post",
+        }
+    ],
+    postsCount: Number,
+    
+    savedPosts: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "Post",
+        }
+    ],
+    
+    comments: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "Comment",
+        }
+    ],
+    replies: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "Reply",
+        }
+    ],
 
     
 }, { timestamps: true });

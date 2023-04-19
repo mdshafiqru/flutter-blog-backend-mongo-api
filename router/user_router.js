@@ -1,8 +1,21 @@
-const Todo = require('../models/todo');
-const authValidator = require('../middlewares/validators/auth_validator');
-const authController = require('../controllers/common/auth_controller');
+
+
+// internal imports
+// middleware imports
 const user = require('../middlewares/user/user');
 const avatarUpload = require('../middlewares/common/avatar_upload');
+const postImageUpload = require('../middlewares/common/post_image_upload');
+
+// validators middlware inports
+const authValidator = require('../middlewares/validators/auth_validator');
+const postValidator = require('../middlewares/validators/post_validator');
+const commentValidator = require('../middlewares/validators/comment_validator');
+
+//controllers inports
+const authController = require('../controllers/common/auth_controller');
+const postController = require('../controllers/common/post_controller');
+const commentController = require('../controllers/common/comment_controller');
+const categoryController = require('../controllers/common/category_controller');
 
 module.exports = (express) => {
     const router = express.Router();
@@ -18,65 +31,41 @@ module.exports = (express) => {
     router.put('/update-profile', user, authValidator.updateProfile, authController.updateProfile);
     router.put('/update-profile-photo', user, avatarUpload, authController.updateProfilePhoto);
     
+    // posts
+    router.post('/post-create', user, postImageUpload, postValidator.createPost, postController.createPost);
+    router.put('/post-edit', user, postImageUpload, postValidator.editPost, postController.editPost);
+    router.get('/post-all', user, postController.getPosts);
+    router.get('/get-posts-by-category/:categoryId', user, postController.getPostsByCategory);
+    router.get('/posts-by-author/:authorId', user, postController.getPostsByAuthor);
+    router.get('/my-posts', user, postController.myPosts);
+    router.get('/search-posts/:query', user, postController.searchPosts);
+    router.delete('/delete-post/:postId', user, postController.deletePost);
+    router.delete('/delete-post-permanent/:postId', user, postController.deletePostPermanent);
+
+    // saved posts
+    router.get('/save-post/:postId', user, postController.addSavePost);
+    router.get('/get-saved-posts', user, postController.getSavedPosts);
+    router.delete('/remove-saved-post/:postId', user, postController.removeSavedPost);
+    
+    // comments
+    router.get('/like-unlike/:postId', user, commentController.likeUnlike);
+    router.post('/create-comment', user, commentValidator.createComment, commentController.createComment);
+    router.get('/get-comments/:postId', user, commentController.getComments);
+    router.delete('/delete-comment/:commentId', user, commentController.deleteComment);
+
+    // reply
+    router.post('/create-reply', user, commentValidator.createReply, commentController.createReply);
+    router.get('/get-replies/:commentId', user, commentController.getReplies);
+    router.delete('/delete-reply/:replyId', user, commentController.deleteReply);
+
+    // categories
+    router.get('/category-all', user, categoryController.getCategories);
+    
+    // author
 
 
 
 
-    // todo
-    router.post('/create-todo', async (req, res) => {
-        const todo = new Todo(req.body);
-        try {
-            await todo.save();
-            res.status(200).json({ message: "Todo inserted successfully!", success: true  });
-
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    });
-
-    router.get('/all-todos', async (req, res) => {
-        try {
-            const todos = await Todo.find();
-            res.status(200).json(todos);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    });
-
-    router.get('/get-todo/:id', async (req, res) => {
-        try {
-            const todos = await Todo.findOne({_id: req.params.id});
-            res.status(200).json(todos);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    });
-
-    router.put('/update-todo/:id', async (req, res) => {
-        try {
-            
-            const result = await Todo.findByIdAndUpdate(
-                {_id: req.params.id},
-                {
-                    $set: {
-                        status: req.body.status,
-                        title: req.body.title
-                    },
-                }, 
-                {
-                    useFindAndModify: false,
-                    new: true
-                }
-            );
-
-            console.log(result);
-
-            res.status(200).json({ message: "Todo updated successfully!", success: true, result  });
-
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    });
 
     return router;
 }

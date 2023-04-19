@@ -14,27 +14,27 @@ const login = async (req, res) => {
     let {email, password} = req.body;
     
     try {
-        const user = await User.findOne({ email, role: 'user' });
+        const user = await User.findOne({ email, role: 'user' }).select('_id name email password phone avatar shortBio isDeleted createdAt');
     
         if(!user){
-            res.status(400).send({message:"No user found with this email", success: false});
+            return res.status(400).json({message:"No user found with this email", success: false});
         }
         else {
             let passwordValid = bcrypt.compareSync(password, user.password);
 
             if(passwordValid){
 
-                let token = jwt.sign({userId: user._id, role: user.role}, process.env.JWT_SECRET, {expiresIn : '7d'});
+                let token = jwt.sign({userId: user.id, role: 'user'}, process.env.JWT_SECRET, {expiresIn : '7d'});
 
                 user.password = undefined;
-                res.status(200).send({user, token});
+                return res.status(200).json({user, token});
 
             } else {
-                res.status(400).send({message:"Wrong Password", success: false});
+                return res.status(400).json({message:"Wrong Password", success: false});
             }
         }
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -42,27 +42,27 @@ const adminLogin = async (req, res) => {
     let {email, password} = req.body;
     
     try {
-        const user = await User.findOne({ email, role: 'admin'  });
+        const user = await User.findOne({ email, role: 'admin' }).select('_id name email password phone avatar shortBio isDeleted createdAt');
     
         if(!user){
-            res.status(400).send({message:"No user found with this email", success: false});
+            return res.status(400).json({message:"No user found with this email", success: false});
         }
         else {
             let passwordValid = bcrypt.compareSync(password, user.password);
 
             if(passwordValid){
 
-                let token = jwt.sign({userId: user._id, role: user.role}, process.env.JWT_SECRET, {expiresIn : '7d'});
+                let token = jwt.sign({userId: user._id, role: 'admin' }, process.env.JWT_SECRET, {expiresIn : '7d'});
 
                 user.password = undefined;
-                res.status(200).send({user, token});
+                return res.status(200).json({user, token});
 
             } else {
-                res.status(400).send({message:"Wrong Password", success: false});
+                return res.status(400).json({message:"Wrong Password", success: false});
             }
         }
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -73,7 +73,7 @@ const register = async (req, res) => {
         const existingUser = await User.findOne({ email: email, role: 'user' });
 
         if(existingUser){
-            res.status(400).send({message: "User already exists with this email, try to login", success: false});
+            return res.status(400).json({message: "User already exists with this email, try to login", success: false});
         } else {
 
             const salt = bcrypt.genSaltSync(10);
@@ -81,51 +81,59 @@ const register = async (req, res) => {
 
             let user = await User.create({name, email, password: hashedPass});
 
-            let token = jwt.sign({userId: user._id, role: user.role}, process.env.JWT_SECRET, {expiresIn : '7d'});
+            let token = jwt.sign({userId: user._id, role: 'user'}, process.env.JWT_SECRET, {expiresIn : '7d'});
 
             user.password = undefined;
-            res.status(200).send({user, token});
+            user.posts = undefined;
+            user.likes = undefined;
+            user.comments = undefined;
+            user.replies = undefined;
+            user.isDeleted = undefined;
+            user.role = undefined;
+            user.updatedAt = undefined;
+
+            return res.status(200).json({user, token});
 
         }
 
     } catch (error) {
         
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
 const user = async (req, res) => {
     
     try {
-        const user = await User.findOne({ _id: req.userId }).select('name email avatar isDeleted -_id').exec();
+        const user = await User.findOne({ _id: req.userId }).select('name email avatar shortBio isDeleted -_id').exec();
 
         if(user){
             
-            res.status(200).send(user);
+            return res.status(200).json(user);
         }
         else {
-            res.status(401).send({message: "User not found", success: false});
+            return res.status(401).json({message: "User not found", success: false});
         }
 
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
 const admin = async (req, res) => {
     
     try {
-        const user = await User.findOne({ _id: req.userId }).select('name email avatar -_id').exec();
+        const user = await User.findOne({ _id: req.userId }).select('name email avatar shortBio -_id').exec();
 
         if(user){
-            res.status(200).send(user);
+            return res.status(200).json(user);
         }
         else {
-            res.status(401).send({message: "Admin not found", success: false});
+            return res.status(401).json({message: "Admin not found", success: false});
         }
 
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return  res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -136,13 +144,13 @@ const checkResetPass = async (req, res) => {
         const user = await User.findOne({ email: req.body.email, role: 'user' });
 
         if(user){
-            res.status(200).send({message: 'User found', success: true});
+            return res.status(200).json({message: 'User found', success: true});
         } else {
-            res.status(400).send({message: "User not found with this email", success: false});
+            return  res.status(400).json({message: "User not found with this email", success: false});
         }
         
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return  res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -166,18 +174,18 @@ const resetPass = async (req, res) => {
 
                 await user.save();
 
-                res.status(200).send({message: 'Password Updated Successfully!', success: true});
+                return  res.status(200).json({message: 'Password Updated Successfully!', success: true});
 
             } else {
-                res.status(400).send({message:"Current password not matched.", success: false});
+                return  res.status(400).json({message:"Current password not matched.", success: false});
             }
 
         } else {
-            res.status(400).send({message: "User not found with this email", success: false});
+            return  res.status(400).json({message: "User not found with this email", success: false});
         }
         
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -203,19 +211,19 @@ const updatePass = async (req, res) => {
                 user.password = hashedPass;
                 await user.save();
 
-                res.status(200).send({message: 'Password Updated Successfully!', success: true});
+                return res.status(200).json({message: 'Password Updated Successfully!', success: true});
 
             } else {
-                res.status(400).send({message:"Current password not matched.", success: false});
+                return res.status(400).json({message:"Current password not matched.", success: false});
             }
 
         }
         else {
-            res.status(401).send({message: "User not found", success: false});
+            return res.status(401).json({message: "User not found", success: false});
         }
 
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 const updateAdminPass = async (req, res) => {
@@ -238,19 +246,19 @@ const updateAdminPass = async (req, res) => {
                 admin.password = hashedPass;
                 await admin.save();
 
-                res.status(200).send({message: 'Password Updated Successfully!', success: true});
+                return res.status(200).json({message: 'Password Updated Successfully!', success: true});
 
             } else {
-                res.status(400).send({message:"Current password not matched.", success: false});
+                return res.status(400).json({message:"Current password not matched.", success: false});
             }
 
         }
         else {
-            res.status(401).send({message: "Admin not found", success: false});
+            return res.status(401).json({message: "Admin not found", success: false});
         }
 
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -258,7 +266,7 @@ const updateProfile = async (req, res) => {
     
     try {
         
-        const {name, phone} = req.body;
+        const {name, phone, shortBio} = req.body;
 
         const user = await User.findOne({ _id: req.userId });
 
@@ -266,24 +274,24 @@ const updateProfile = async (req, res) => {
 
             user.name = name;
             user.phone = phone;
+            user.shortBio = shortBio;
             await user.save();
 
-            res.status(200).send({message: 'Profile Updated Successfully!', success: true});
-
+            return res.status(200).json({message: 'Profile Updated Successfully!', success: true, data: user});
         }
         else {
-            res.status(401).send({message: "User not found", success: false});
+            return res.status(401).json({message: "User not found", success: false});
         }
 
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 const updateAdminProfile = async (req, res) => {
     
     try {
         
-        const {name, phone} = req.body;
+        const {name, phone, shortBio} = req.body;
 
         const admin = await User.findOne({ _id: req.userId });
 
@@ -291,17 +299,18 @@ const updateAdminProfile = async (req, res) => {
 
             admin.name = name;
             admin.phone = phone;
+            admin.shortBio = shortBio;
             await admin.save();
 
-            res.status(200).send({message: 'Profile Updated Successfully!', success: true});
+            return res.status(200).json({message: 'Profile Updated Successfully!', success: true, data: admin});
 
         }
         else {
-            res.status(401).send({message: "Admin not found", success: false});
+            return res.status(401).json({message: "Admin not found", success: false});
         }
 
     } catch (error) {
-        res.status(500).send({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -309,8 +318,8 @@ const updateProfilePhoto = async (req, res) => {
     const uploadedFile = req.files[0];
 
     if(!uploadedFile){
-        res.status(400).json({message: "File not uploaded", success: false});
-        return;
+        return res.status(400).json({message: "File not uploaded", success: false});
+        
     }
 
     try {
@@ -336,10 +345,10 @@ const updateProfilePhoto = async (req, res) => {
             user.avatar = filePath
             await user.save();
 
-            res.status(200).json({message: "File uploaded", success: true, avatar: filePath});
+            return res.status(200).json({message: "File uploaded", success: true, avatar: filePath});
         }
         else {
-            res.status(401).json({message: "User not found", success: false});
+            return res.status(401).json({message: "User not found", success: false});
         }
 
     } catch (error) {
@@ -362,7 +371,7 @@ const updateProfilePhoto = async (req, res) => {
 
         }
         
-        res.status(500).json({message: error.message, success: false});
+        return res.status(500).json({message: error.message, success: false});
     }
 }
 
@@ -371,7 +380,7 @@ const updateAdminProfilePhoto = async (req, res) => {
     const uploadedFile = req.files[0];
 
     if(!uploadedFile){
-        res.status(400).json({message: "File not uploaded", success: false});
+        return res.status(400).json({message: "File not uploaded", success: false});
         return;
     }
 
@@ -398,10 +407,10 @@ const updateAdminProfilePhoto = async (req, res) => {
             admin.avatar = filePath
             await admin.save();
 
-            res.status(200).json({message: "File uploaded", success: true, avatar: filePath});
+            return res.status(200).json({message: "File uploaded", success: true, avatar: filePath});
         }
         else {
-            res.status(401).json({message: "Admin not found", success: false});
+            return res.status(401).json({message: "Admin not found", success: false});
         }
 
     } catch (error) {
@@ -424,7 +433,7 @@ const updateAdminProfilePhoto = async (req, res) => {
 
         }
         
-        res.status(500).json({message: error.message, success: false});
+        return  res.status(500).json({message: error.message, success: false});
     }
 }
 

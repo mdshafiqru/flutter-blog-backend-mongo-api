@@ -85,6 +85,19 @@ const updateProfile = [
     
 ];
 
+const blockUser = [
+    body('userId')
+        .trim()
+        .isLength({min: 1})
+        .withMessage("Block reason is required"),
+
+    body('blockedReason')
+        .trim()
+        .isLength({min: 1})
+        .withMessage("Block reason is required"),
+
+    validationHandler,
+];
 
 
 module.exports = {
@@ -95,4 +108,5 @@ module.exports = {
     resetPass,
     updatePass,
     updateProfile,
+    blockUser,
 };
