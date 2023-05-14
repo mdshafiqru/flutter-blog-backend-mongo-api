@@ -8,6 +8,8 @@ function postImageUpload(req, res, next) {
         "only jpg, jpeg or png format is allowed"
     );
 
+  
+
     upload.any()(req, res, (err) => {
         if(err){
             res.status(500).json({

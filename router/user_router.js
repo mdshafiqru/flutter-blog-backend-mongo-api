@@ -33,7 +33,7 @@ module.exports = (express) => {
     
     // posts
     router.post('/post-create', user, postImageUpload, postValidator.createPost, postController.createPost);
-    router.put('/post-edit', user, postImageUpload, postValidator.editPost, postController.editPost);
+    router.post('/post-edit', user, postImageUpload, postValidator.editPost, postController.editPost);
     router.get('/post-all', user, postController.getPosts);
     router.get('/get-posts-by-category/:categoryId', user, postController.getPostsByCategory);
     router.get('/posts-by-author/:authorId', user, postController.getPostsByAuthor);

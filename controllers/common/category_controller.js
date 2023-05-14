@@ -24,7 +24,7 @@ const createCategory = async (req, res) => {
 const getCategories = async (req, res) => {
     try {
         
-        const categories = await Category.find({name: { $ne: 'Uncategorized' }, isActive: true}).sort({name: 'asc'});
+        const categories = await Category.find({name: { $ne: 'Uncategorized' }, isActive: true}).select('_id name postCount').sort({name: 'asc'});
 
         for (let i = 0; i < categories.length; i++) {
             const cat = categories[i];

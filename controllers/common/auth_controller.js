@@ -90,7 +90,9 @@ const register = async (req, res) => {
             user.replies = undefined;
             user.isDeleted = undefined;
             user.role = undefined;
+            user.savedPosts = undefined;
             user.updatedAt = undefined;
+            user.__v = undefined;
 
             return res.status(200).json({user, token});
 
@@ -157,28 +159,20 @@ const checkResetPass = async (req, res) => {
 // reset password for Not Logged in users
 const resetPass = async (req, res) => {
     try {
-        const {email, currentPass, newPass} = req.body;
+        const {email, newPass} = req.body;
 
         const user = await User.findOne({ email, role: 'user' });
 
         if(user){
 
-            let passwordValid = bcrypt.compareSync(currentPass, user.password);
+            const salt = bcrypt.genSaltSync(10);
+            let hashedPass = bcrypt.hashSync(newPass, salt);
 
-            if(passwordValid){
+            user.password = hashedPass;
 
-                const salt = bcrypt.genSaltSync(10);
-                let hashedPass = bcrypt.hashSync(newPass, salt);
+            await user.save();
 
-                user.password = hashedPass;
-
-                await user.save();
-
-                return  res.status(200).json({message: 'Password Updated Successfully!', success: true});
-
-            } else {
-                return  res.status(400).json({message:"Current password not matched.", success: false});
-            }
+            return  res.status(200).json({message: 'Password Updated Successfully! Login now.', success: true});
 
         } else {
             return  res.status(400).json({message: "User not found with this email", success: false});

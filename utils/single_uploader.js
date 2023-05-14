@@ -10,6 +10,7 @@ function uploader(
     max_file_size,
     error_msg
 ){
+    
     // make upload object
     const UPLOADS_FOLDER = `public/uploads/${subfolder_path}/`;
 
@@ -20,10 +21,12 @@ function uploader(
         filename: (req, file, cb) => {
             
             const fileName = uuid.v1() + '-' + Date.now() + '.jpg.png';
+
             
             cb(null, fileName );
         }
     });
+    
 
     const upload = multer({
         storage: storage,
@@ -31,6 +34,7 @@ function uploader(
             fileSize: max_file_size,
         },
         fileFilter: (req, file, cb) => {
+            console.log(file.mimetype);
             if(allowed_file_types.includes(file.mimetype)){
                 cb(null, true);
             } else {

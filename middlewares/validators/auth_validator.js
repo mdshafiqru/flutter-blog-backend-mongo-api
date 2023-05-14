@@ -47,10 +47,7 @@ const resetPass = [
         .trim()
         .isEmail()
         .withMessage("Provide a valid email"),
-    body('currentPass')
-        .trim()
-        .isLength({min: 6})
-        .withMessage("Password must be at lest 6 character long."),
+    
     body('newPass')
         .trim()
         .isLength({min: 6})

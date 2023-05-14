@@ -14,6 +14,10 @@ const createPost = async (req, res)=> {
 
         const {title, description, categoryId} = req.body;
 
+        console.log(title);
+        console.log(description);
+        console.log(categoryId);
+
         const post = await Post.create({title, description, user: req.userId, category: categoryId});
 
         const user = await User.findOne({_id: req.userId});
@@ -54,8 +58,11 @@ const createPost = async (req, res)=> {
 
 
 const editPost = async (req, res) => {
-    const {title, description, categoryId, postId, deletedThumbnail, deletedImages } = req.body;
+    const {title, description, categoryId, postId, deletedThumbnail} = req.body;
+    
+    const deletedImages =  JSON.parse(req.body.deletedImages);
 
+    
     try {
 
         const post = await Post.findOne({_id: postId, isDeleted: false});
@@ -77,24 +84,37 @@ const editPost = async (req, res) => {
 
                 let index = 0;
 
-                if(deletedThumbnail){
+                if(deletedThumbnail != undefined) {
+                    if(deletedThumbnail.length > 0){
 
-                    req.files.forEach(file => {
-                    
-                        const filePath = `uploads/post_images/${file.filename}`;
-    
-                        if(index === 0){
-                            post.thumbnail = filePath;
-                        }
-                        else {
+                        req.files.forEach(file => {
+                        
+                            const filePath = `uploads/post_images/${file.filename}`;
+        
+                            if(index === 0){
+                                post.thumbnail = filePath;
+                            }
+                            else {
+                                post.images.push(filePath);
+                            }
+        
+                            index++;
+        
+                        });
+                       
+                    } else {
+                        req.files.forEach(file => {
+                        
+                            const filePath = `uploads/post_images/${file.filename}`;
+        
                             post.images.push(filePath);
-                        }
-    
-                        index++;
-    
-                    });
-                   
-                } else {
+        
+                            index++;
+        
+                        });
+                    }
+                }
+                else {
                     req.files.forEach(file => {
                     
                         const filePath = `uploads/post_images/${file.filename}`;
@@ -104,36 +124,12 @@ const editPost = async (req, res) => {
                         index++;
     
                     });
-                    
                 }
 
-                
-
-                if(deletedThumbnail){
-                    const filePath = 'public/' + deletedThumbnail;
-
-                    if(fs.existsSync(filePath)){
-                        fs.unlink(
-                            filePath,
-                            (err) =>  {
-                                if(err){
-                                    console.log(err.message)
-                                }
-                            }
-                        );
-                    }
-                }
-
-            
-                if(deletedImages.length > 0){
-
-                    for (let i = 0; i < deletedImages.length; i++) {
-                        const img = deletedImages[i];
-
-                        post.images.remove(img);
-
-                        const filePath = 'public/' + img;
-
+                if(deletedThumbnail != undefined) {
+                    if(deletedThumbnail.length > 0){ 
+                        const filePath = 'public/' + deletedThumbnail;
+    
                         if(fs.existsSync(filePath)){
                             fs.unlink(
                                 filePath,
@@ -147,6 +143,31 @@ const editPost = async (req, res) => {
                     }
                 }
 
+              
+                if(deletedImages != undefined){
+                    if(deletedImages.length > 0){
+
+                        for (let i = 0; i < deletedImages.length; i++) {
+                            const img = deletedImages[i];
+    
+                            post.images.remove(img);
+    
+                            const filePath = 'public/' + img;
+    
+                            if(fs.existsSync(filePath)){
+                                fs.unlink(
+                                    filePath,
+                                    (err) =>  {
+                                        if(err){
+                                            console.log(err.message)
+                                        }
+                                    }
+                                );
+                            }
+                        }
+                    }
+                }
+                
                 await post.save();
 
                 return res.status(200).json({message: 'Post updated successfully!', success: true});
@@ -162,6 +183,7 @@ const editPost = async (req, res) => {
         }
         
     } catch (error) {
+        console.log(error);
         deleteFiles(req.files);
         return res.status(500).json({message: error.message, success: false});
     }
@@ -194,7 +216,7 @@ const getPosts = async (req, res)=> {
         const posts = await Post.find({isDeleted : false})
                                 .sort({createdAt: 'desc'})
                                 .select('-isDeleted -updatedAt -__v')
-                                .populate('user', 'name avatar _id shortBio')
+                                .populate('user', 'name avatar _id shortBio posts')
                                 .populate('category', '_id name')
                                 .exec();
         
