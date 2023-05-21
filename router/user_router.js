@@ -29,7 +29,7 @@ module.exports = (express) => {
     router.get('/', user, authController.user);
     router.put('/update-pass', user, authValidator.updatePass, authController.updatePass);
     router.put('/update-profile', user, authValidator.updateProfile, authController.updateProfile);
-    router.put('/update-profile-photo', user, avatarUpload, authController.updateProfilePhoto);
+    router.post('/update-profile-photo', user, avatarUpload, authController.updateProfilePhoto);
     
     // posts
     router.post('/post-create', user, postImageUpload, postValidator.createPost, postController.createPost);
@@ -39,7 +39,9 @@ module.exports = (express) => {
     router.get('/posts-by-author/:authorId', user, postController.getPostsByAuthor);
     router.get('/my-posts', user, postController.myPosts);
     router.get('/search-posts/:query', user, postController.searchPosts);
+    router.get('/deleted-posts', user, postController.getDeletedPosts);
     router.delete('/delete-post/:postId', user, postController.deletePost);
+    router.get('/restore-post/:postId', user, postController.restorePost);
     router.delete('/delete-post-permanent/:postId', user, postController.deletePostPermanent);
 
     // saved posts

@@ -107,11 +107,14 @@ const register = async (req, res) => {
 const user = async (req, res) => {
     
     try {
-        const user = await User.findOne({ _id: req.userId }).select('name email avatar shortBio isDeleted -_id').exec();
+        const user = await User.findOne({ _id: req.userId }).select('_id name phone email avatar shortBio createdAt postsCount posts').exec();
 
         if(user){
+
+            user.postsCount = user.posts.length;
+            user.posts = undefined;
             
-            return res.status(200).json(user);
+            return res.status(200).json({user});
         }
         else {
             return res.status(401).json({message: "User not found", success: false});
@@ -271,7 +274,7 @@ const updateProfile = async (req, res) => {
             user.shortBio = shortBio;
             await user.save();
 
-            return res.status(200).json({message: 'Profile Updated Successfully!', success: true, data: user});
+            return res.status(200).json({message: 'Profile Updated Successfully!', success: true});
         }
         else {
             return res.status(401).json({message: "User not found", success: false});
@@ -339,7 +342,7 @@ const updateProfilePhoto = async (req, res) => {
             user.avatar = filePath
             await user.save();
 
-            return res.status(200).json({message: "File uploaded", success: true, avatar: filePath});
+            return res.status(200).json({message: "Profile Photo Updated", success: true, avatar: filePath});
         }
         else {
             return res.status(401).json({message: "User not found", success: false});

@@ -14,10 +14,6 @@ const createPost = async (req, res)=> {
 
         const {title, description, categoryId} = req.body;
 
-        console.log(title);
-        console.log(description);
-        console.log(categoryId);
-
         const post = await Post.create({title, description, user: req.userId, category: categoryId});
 
         const user = await User.findOne({_id: req.userId});
@@ -46,7 +42,7 @@ const createPost = async (req, res)=> {
 
         post.save();
 
-       return res.status(200).json({message: "Post created successfully!", success: true});
+       return res.status(200).json({message: "Post created successfully!", success: true, postCount: user.posts.length});
 
         
     } catch (error) {
@@ -183,7 +179,6 @@ const editPost = async (req, res) => {
         }
         
     } catch (error) {
-        console.log(error);
         deleteFiles(req.files);
         return res.status(500).json({message: error.message, success: false});
     }
@@ -191,7 +186,6 @@ const editPost = async (req, res) => {
 }
 
 const deleteFiles = (files) => {
-    console.log(files);
     files.forEach(file => {
 
         const filePath = `public/uploads/post_images/${file.filename}`;
@@ -251,7 +245,7 @@ const getPostsByCategory = async (req, res) => {
         const posts = await Post.find({category: req.params.categoryId , isDeleted : false})
                                 .sort({createdAt: 'desc'})
                                 .select('-isDeleted -updatedAt -__v')
-                                .populate('user', 'name avatar _id shortBio')
+                                .populate('user', 'name avatar _id shortBio posts')
                                 .populate('category', '_id name')
                                 .exec();
         
@@ -279,7 +273,7 @@ const myPosts = async (req, res)=> {
         const posts = await Post.find({user: req.userId, isDeleted : false})
                                 .sort({createdAt: 'desc'})
                                 .select('-isDeleted -updatedAt -__v')
-                                .populate('user', 'name avatar _id shortBio')
+                                .populate('user', 'name avatar _id shortBio ')
                                 .populate('category', '_id name')
                                 .exec();
 
@@ -321,7 +315,7 @@ const deletePost = async (req, res) => {
                     } else {
                         post.isDeleted = true;
                         await post.save();
-            
+
                         return res.status(200).json({message: "post deleted", success: true });
                     }
                 }
@@ -331,6 +325,48 @@ const deletePost = async (req, res) => {
                     await post.save();
         
                     return res.status(200).json({message: "post deleted", success: true });
+        
+                }
+
+            } else {
+                return res.status(400).json({message: "post not found", success: false });
+            }
+
+        } else {
+            return res.status(401).json({message: "User not found.", success: false}); 
+        }
+
+    } catch (error) {
+        return res.status(500).json({message: error.message, success: false });
+    }
+}
+const restorePost = async (req, res) => {
+    try {
+        
+        const post = await Post.findOne({_id: req.params.postId});
+
+        const user = await User.findOne({_id: req.userId});
+
+        if(user){
+
+            if(post){
+
+                if(user.role === 'user'){
+                    if(post.user != req.userId){
+                        return res.status(400).json({message: "You don't have permission to restore this post.", success: false});
+                    } else {
+                        post.isDeleted = false;
+                        await post.save();
+
+                        return res.status(200).json({message: "Post Restored Successfully!", success: true });
+                    }
+                }
+                else if(user.role === 'admin') {
+
+                    post.isDeleted = false;
+                    await post.save();
+        
+                    return res.status(200).json({message: "Post Restored Successfully!", success: true });
         
                 }
 
@@ -533,6 +569,34 @@ const getSavedPosts = async (req, res) => {
     }
 }
 
+
+const getDeletedPosts = async (req, res)=> {
+    try {
+        const posts = await Post.find({user: req.userId, isDeleted : true})
+                                .sort({createdAt: 'desc'})
+                                .select('-isDeleted -updatedAt -__v')
+                                .populate('user', 'name avatar _id shortBio posts')
+                                .populate('category', '_id name')
+                                .exec();
+
+        posts.forEach((post) => {
+            const likeCount = post.likes.length;
+            const commentCount = post.comments.length;
+            const isLiked = post.likes.includes(req.userId);
+
+            post.likes = undefined;
+            post.comments = undefined;
+            post.likeCount = likeCount;
+            post.commentCount = commentCount;
+            post.isLiked = isLiked;
+        });
+
+        return res.status(200).json(posts);
+    } catch (error) {
+        return res.status(500).json({message: error.message, success: false});
+    }
+}
+
 const removeSavedPost = async (req, res) => {
     try {
 
@@ -568,14 +632,30 @@ const searchPosts = async (req, res) => {
         
         const query = req.params.query;
 
-        const results = await Post.find({
+        const posts = await Post.find({
             $or: [
               { title: { $regex: query, $options: 'i' } },
               { description: { $regex: query, $options: 'i' } }
             ]
+        }).sort({createdAt: 'desc'})
+        .select('-isDeleted -updatedAt -__v')
+        .populate('user', 'name avatar _id shortBio posts')
+        .populate('category', '_id name')
+        .exec();
+
+        posts.forEach((post) => {
+            const likeCount = post.likes.length;
+            const commentCount = post.comments.length;
+            const isLiked = post.likes.includes(req.userId);
+
+            post.likes = undefined;
+            post.comments = undefined;
+            post.likeCount = likeCount;
+            post.commentCount = commentCount;
+            post.isLiked = isLiked;
         });
 
-        return res.status(200).json(results);
+        return res.status(200).json(posts);
 
     } catch (error) {
         return res.status(500).json({message: error.message, success: false });
@@ -598,15 +678,15 @@ const getPostsByAuthor = async (req, res) => {
                                 .exec();
 
             posts.forEach((post) => {
-            const likeCount = post.likes.length;
-            const commentCount = post.comments.length;
-            const isLiked = post.likes.includes(req.userId);
+                const likeCount = post.likes.length;
+                const commentCount = post.comments.length;
+                const isLiked = post.likes.includes(req.userId);
 
-            post.likes = undefined;
-            post.comments = undefined;
-            post.likeCount = likeCount;
-            post.commentCount = commentCount;
-            post.isLiked = isLiked;
+                post.likes = undefined;
+                post.comments = undefined;
+                post.likeCount = likeCount;
+                post.commentCount = commentCount;
+                post.isLiked = isLiked;
             });
 
             author.postsCount = author.posts.length;
@@ -630,10 +710,12 @@ module.exports = {
     createPost,
     editPost,
     deletePost,
+    restorePost,
     deletePostPermanent,
     addSavePost,
     getSavedPosts,
     removeSavedPost,
     searchPosts,
+    getDeletedPosts,
     getPostsByAuthor,
 }

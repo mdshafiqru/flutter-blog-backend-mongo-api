@@ -5,8 +5,6 @@ const validationHandler = require('../common/validation_handler');
 const register = [
     body('name')
         .trim()
-        .isAlpha("en-US", {ignore: " .-"})
-        .withMessage('Name must be alphabet letters.')
         .isLength({min: 3})
         .withMessage("Name must be at lest 3 character long."),
     body('email')
@@ -72,8 +70,6 @@ const updatePass = [
 const updateProfile = [
     body('name')
         .trim()
-        .isAlpha("en-US", {ignore: " .-"})
-        .withMessage('Name must be alphabet letters.')
         .isLength({min: 3})
         .withMessage("Name must be at lest 3 character long."),
     
